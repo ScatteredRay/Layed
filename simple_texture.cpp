@@ -1,3 +1,4 @@
+#include "simple_texture.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -68,12 +69,17 @@ bitmap* load_bmp(const char* filename)
         data[i] = tmp;
     }
 
+    return create_bitmap(bmp->width, bmp->height, data, buffer);
+}
+
+bitmap* create_bitmap(int w, int h, void* data, void* free)
+{
     bitmap* img = new bitmap();
 
-    img->width = bmp->width;
-    img->height = bmp->height;
+    img->width = w;
+    img->height = h;
     img->data = data;
-    img->to_free = buffer;
+    img->to_free = free;
 
     return img;
 }
