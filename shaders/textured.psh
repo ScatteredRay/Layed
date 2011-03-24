@@ -1,0 +1,10 @@
+// Copyright (c) 2010, Nicholas "Indy" Ray. All rights reserved.
+// See the LICENSE file for usage, modification, and distribution terms.
+
+uniform sampler2D view_texture;
+
+void main(void)
+{
+    gl_FragColor = texture2D(view_texture, gl_TexCoord[0].xy);
+    //gl_FragColor = texture2D(view_texture, vec2(0.50, 0.50));
+}

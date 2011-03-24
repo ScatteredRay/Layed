@@ -4,25 +4,23 @@
 #include "simple_shader.h"
 #include "simple_vectors.h"
 #include "simple_mesh.h"
+#include "simple_texture.h"
 
-#include "editor_meshes.h"
 #include <gl.h>
 
 struct boot_vert
 {
     vector3 location;
-    vector3 normal;
-    vector4 color;
+    vector2 uv;
 };
 
 VertexDef boot_vert_def()
 {
     boot_vert* proxy = 0;
-    VertexDef VD = CreateVertexDef(sizeof(boot_vert), 3);
+    VertexDef VD = CreateVertexDef(sizeof(boot_vert), 2);
     int i = 0;
     AddVertexAttribute(VD, i++, VERTEX_POSITION_ATTR, (size_t)&proxy->location, 3, GL_FLOAT);
-    AddVertexAttribute(VD, i++, VERTEX_NORMAL_ATTR, (size_t)&proxy->normal, 3, GL_FLOAT);
-    AddVertexAttribute(VD, i++, VERTEX_COLOR_ATTR, (size_t)&proxy->color, 4, GL_FLOAT);
+    AddVertexAttribute(VD, i++, VERTEX_UV_ATTR, (size_t)&proxy->uv, 2, GL_FLOAT);
 
     return VD;
 }
@@ -32,10 +30,10 @@ VertexDef boot_vert_def()
 struct ViewInfo
 {
     GLuint basic_shader;
-    GLint diffuse_color_uniform;
+    GLint texture_uniform;
     VertexDef boot_vert;
     GLuint test_mesh;
-    Editor_Mesh* grid;
+    GLuint test_texture;
     
     bool bMouseDown;
 };
@@ -44,42 +42,52 @@ ViewInfo* InitView()
 {
     ViewInfo* view = new ViewInfo();
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    view->basic_shader = CreateShaderProgram(SHADER_CONSTANT_COLOR);
-    view->diffuse_color_uniform = glGetUniformLocation(view->basic_shader,
-                                                       "diffuse_color");
+    view->basic_shader = CreateShaderProgram(SHADER_TEXTURED);
+    view->texture_uniform = glGetUniformLocation(view->basic_shader,
+                                                 "view_texture");
 
     glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
     view->boot_vert = boot_vert_def();
 
-    boot_vert verts[3];
-    verts[0].location.x = 0.0;
-    verts[0].location.y = 1.0;
+    boot_vert verts[4];
+    verts[0].location.x = -0.90;
+    verts[0].location.y = -0.90;
     verts[0].location.z = 0.0;
+    verts[0].uv.x = 0.0;
+    verts[0].uv.y = 0.0;
 
-    verts[1].location.x = -1.0;
-    verts[1].location.y = -1.0;
+    verts[1].location.x = -0.90;
+    verts[1].location.y = 0.90;
     verts[1].location.z = 0.0;
+    verts[1].uv.x = 0.0;
+    verts[1].uv.y = 1.0;
 
-    verts[2].location.x = 1.0;
-    verts[2].location.y = -1.0;
+    verts[2].location.x = 0.90;
+    verts[2].location.y = -0.90;
     verts[2].location.z = 0.0;
+    verts[2].uv.x = 1.0;
+    verts[2].uv.y = 0.0;
 
-    view->test_mesh = CreateMesh(3, sizeof(boot_vert), verts);
+    verts[3].location.x = 0.90;
+    verts[3].location.y = 0.90;
+    verts[3].location.z = 0.0;
+    verts[3].uv.x = 1.0;
+    verts[3].uv.y = 1.0;
 
-    InitEditor();
-    view->grid = CreateGridMesh(10, 0.1);
+    view->test_mesh = CreateMesh(4, sizeof(boot_vert), verts);
 
     view->bMouseDown = false;
+
+    view->test_texture = CreateTextureFromBMP("test.bmp");
 
     return view;
 }
 
 void FinishView(ViewInfo* view)
 {
-    DestroyMesh(view->grid);
-    CleanupEditor();
-
+    DestroyTexture(view->test_texture);
     DestroyMesh(view->test_mesh);
     DestroyVertexDef(view->boot_vert);
     delete view;
@@ -93,20 +101,16 @@ void UpdateView(ViewInfo* view)
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(view->basic_shader);
-    if(view->bMouseDown)
-        glUniform4f(view->diffuse_color_uniform,
-                    0.0f, 1.0f, 0.0f, 1.0f);
-    else
-        glUniform4f(view->diffuse_color_uniform,
-                    1.0f, 0.0f, 0.0f, 1.0f);
-
     glBindBuffer(GL_ARRAY_BUFFER, view->test_mesh);
     ApplyVertexDef(view->boot_vert);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
 
-    glUniform4f(view->diffuse_color_uniform,
-                1.0f, 0.0f, 0.0f, 1.0f);
-    DrawEditorMesh(view->grid);
+    glUniform1i(view->texture_uniform, 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, view->test_texture);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void MouseDown(ViewInfo* view, int x, int y, MouseButtons butons)

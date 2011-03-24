@@ -133,7 +133,8 @@ void DestroyProgramAndAttachedShaders(GLuint program)
 
 const char* ShaderFileMap[][2] =
 {
-    { "shaders/standard.vsh", "shaders/constant_color.psh" }
+    { "shaders/standard.vsh", "shaders/constant_color.psh" },
+    { "shaders/textured.vsh", "shaders/textured.psh" }
 };
 
 const char* GetVShaderFilename(shader_id shader)
